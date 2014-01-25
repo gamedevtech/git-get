@@ -22,3 +22,10 @@ Set up a system wide alias, to access from anywhere
 ```
 alias git-get='mono /usr/bin/git-get.exe'
 ```
+
+Installation (Windows)
+======================
+Download git-get.exe from this repo and move it to C:\Windows\
+```
+https://github.com/gszauer/git-get/raw/master/git-get.exe
+```
