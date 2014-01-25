@@ -29,3 +29,4 @@ Download git-get.exe from this repo and move it to C:\Windows\
 ```
 https://github.com/gszauer/git-get/raw/master/git-get.exe
 ```
+The windows version is untested, i just assume it works.
