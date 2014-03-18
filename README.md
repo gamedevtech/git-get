@@ -6,9 +6,10 @@ git-get will download a users public repositories, starred repositories and gist
 <mono> git-get star <username>
 <mono> git-get gist <username>
 <mono> git-get repo <username>
+<mono> git-get bitbucket <username>
 ```
 
-Installation (OSX & Linux)
+Installation (OSX and Linux)
 ==========================
 Download and install the mono runtime
 ```
@@ -25,8 +26,8 @@ alias git-get='mono /usr/bin/git-get.exe'
 
 Installation (Windows)
 ======================
+This executable was only tested on OSX / Linux, i assume Win32 works.
 Download git-get.exe from this repo and move it to C:\Windows\
 ```
 https://github.com/gszauer/git-get/raw/master/git-get.exe
 ```
-The windows version is untested, i just assume it works.
