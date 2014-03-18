@@ -15,7 +15,7 @@ Download and install the mono runtime
 ```
 http://www.go-mono.com/mono-downloads/download.html
 ```
-Download git-get.exe from this repo and move it to /usr/bin/
+Download git-get.exe from this repo and move it to ```/usr/bin/```
 ```
 https://github.com/gszauer/git-get/raw/master/git-get.exe
 ```
