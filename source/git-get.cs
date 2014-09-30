@@ -107,6 +107,11 @@ namespace Git {
 					links.RemoveAt(i);
 					continue;
 				}
+#if DEBUG
+				else {
+					Console.WriteLine ("Repo link: " + links [i]);
+				}
+#endif
 			}
 			return links;
 		}
@@ -138,7 +143,7 @@ namespace Git {
 				HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
 				using (HttpWebResponse response = (HttpWebResponse)request.GetResponse()) {
 					using (StreamReader reader = new StreamReader(response.GetResponseStream())) {
-						return reader.ReadToEnd();
+						return reader.ReadToEnd().Replace('\n', ' ');
 					}
 				}
 			}
@@ -151,7 +156,7 @@ namespace Git {
 
 		protected bool DownloadFile(string fileURL, string fileName, string localPath) {
 			if (!FileIsValid(fileURL)) {
-				Console.WriteLine("Error downloading file: " + fileURL);
+				Console.WriteLine("Error downloading file: " + fileURL + "\n\t> " + localPath);
 				return false;
 			}
 
@@ -221,7 +226,6 @@ namespace Git {
 					allLinks.RemoveAt(i);
 				}
 			}
-			Console.WriteLine("Found " + allLinks.Count + " repos.");
 
 			foreach (string link in allLinks) {
 				if (!SaveRepo("https://github.com" + link, localPath)) {
@@ -300,11 +304,17 @@ namespace Git {
 				workingDirectory += "/";
 			Console.WriteLine("Working directory: " + workingDirectory);
 
+			string mode = "all";
 			if (!error) {
+				mode = args [0].ToLower ();
 				app.username = args[1];
 			}
+#if DEBUG
+			error = false;
+			app.username = "gszauer";
+#endif
 
-			if (!error && args[0].ToLower() == "all") {
+			if (!error && mode == "all") {
 				if (app.PageIsValid(app.Repos)) {
 					Console.WriteLine("Retrieving url: " + app.Repos);
 					app.SaveRepos(workingDirectory);
@@ -329,7 +339,7 @@ namespace Git {
 					Console.WriteLine("Invalid gist url: " + app.Gists);
 				}
 			}
-			else if (!error && args[0].ToLower() == "star") {
+			else if (!error && mode == "star") {
 				if (app.PageIsValid(app.Stars)) {
 					Console.WriteLine("Retrieving url: " + app.Stars);
 					app.SaveStars(workingDirectory);
@@ -338,7 +348,7 @@ namespace Git {
 					Console.WriteLine("Invalid star url: " + app.Stars);
 				}
 			}
-			else if (!error && args[0].ToLower() == "gist") {
+			else if (!error && mode == "gist") {
 				if (app.PageIsValid(app.Gists)) {
 					Console.WriteLine("Retrieving url: " + app.Gists);
 					app.SaveGists(workingDirectory + "Gists/");
@@ -347,7 +357,7 @@ namespace Git {
 					Console.WriteLine("Invalid gist url: " + app.Gists);
 				}
 			}
-			else if (!error && args[0].ToLower() == "repo") {
+			else if (!error && mode == "repo") {
 				if (app.PageIsValid(app.Repos)) {
 					Console.WriteLine("Retrieving url: " + app.Repos);
 					app.SaveRepos(workingDirectory);
