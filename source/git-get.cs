@@ -31,11 +31,16 @@ namespace Git {
 		}
 
 		private bool FileIsValid(string url) {
+#if !DEBUG
 			try {
+#endif
 				HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
 				request.Method = "HEAD";
+				request.Timeout = 50000; // milliseconds
+				request.AllowAutoRedirect = false;
 				HttpWebResponse response = request.GetResponse() as HttpWebResponse;
-				return (response.StatusCode == HttpStatusCode.OK);
+				return (response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.Found);
+#if !DEBUG
 			}
 			catch (System.Net.WebException we) {
 				//return (we.ToString().Contains("The remote server returned an error: (404) Not Found."));
@@ -48,10 +53,13 @@ namespace Git {
 				Console.WriteLine(e.ToString());
 				return false;
 			}
+#endif
 		}
 
 		protected bool PageIsValid(string url) {
+#if !DEBUG
 			try {
+#endif
 				HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
 				using (HttpWebResponse response = (HttpWebResponse)request.GetResponse()) {
 					using (StreamReader reader = new StreamReader(response.GetResponseStream())) {
@@ -61,6 +69,7 @@ namespace Git {
 						return !starError;
 					}
 				}
+#if !DEBUG
 			}
 			catch (System.Net.WebException we) {
 				//return (we.ToString().Contains("The remote server returned an error: (404) Not Found."));
@@ -73,6 +82,7 @@ namespace Git {
 				Console.WriteLine(e.ToString());
 				return false;
 			}
+#endif
 		}
 
 		protected bool IsValidRepoLink(string link) {
@@ -108,9 +118,9 @@ namespace Git {
 					continue;
 				}
 #if DEBUG
-				else {
-					Console.WriteLine ("Repo link: " + links [i]);
-				}
+				/*else {
+					Console.WriteLine ("Link on page: " + links [i]);
+				}*/
 #endif
 			}
 			return links;
@@ -126,32 +136,40 @@ namespace Git {
 		}
 
 		protected string ExtractOgTitle(string html) {
+#if !DEBUG
 			try {
+#endif
 				Regex linkParser = new Regex(@"<meta.*?property=[""']og:title[""'].*?content=[""'](?<title>.*?)[""'].*?>", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 				MatchCollection matches = linkParser.Matches(html);
 				return matches[0].Groups["title"].Value;
+#if !DEBUG
 			}
 			catch (System.Exception e) {
 				Console.WriteLine("Could not retrieve original title.");
 				Console.WriteLine(e.ToString());
 			}
 			return null;
+#endif
 		}
 
 		protected string GetPageHTML(string url) {
+#if !DEBUG
 			try {
+#endif
 				HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
 				using (HttpWebResponse response = (HttpWebResponse)request.GetResponse()) {
 					using (StreamReader reader = new StreamReader(response.GetResponseStream())) {
 						return reader.ReadToEnd().Replace('\n', ' ');
 					}
 				}
+#if !DEBUG
 			}
 			catch (System.Exception e) {
 				Console.WriteLine("Exception retrieving html for: " + url);
 				Console.WriteLine(e.ToString());
 				return null;
 			}
+#endif
 		}
 
 		protected bool DownloadFile(string fileURL, string fileName, string localPath) {
@@ -167,10 +185,13 @@ namespace Git {
 				System.IO.File.Delete(fileName);
 			}
 
+#if !DEBUG
 			try {
+#endif
 				using (WebClient Client = new WebClient ()) {
 					Client.DownloadFile(fileURL, fileName);
 				}
+#if !DEBUG
 			}
 			catch (System.Net.WebException ne) {
 				netException = ne.ToString();
@@ -188,7 +209,7 @@ namespace Git {
 				Console.WriteLine(e.ToString());
 				return false;
 			}
-			
+#endif
 			Console.WriteLine(fileURL + " -> " + fileName);
 			return true;
 		}
@@ -224,8 +245,23 @@ namespace Git {
 			for (int i = allLinks.Count - 1; i >= 0; --i) {
 				if (!allLinks[i].Contains(username)) {
 					allLinks.RemoveAt(i);
+					continue;
+				}
+				if (allLinks [i] == "/stars/" + username) {
+					allLinks.RemoveAt(i);
+					continue;
+				}
+
+				if (allLinks [i] == "/" + username + "/following") {
+					allLinks.RemoveAt(i);
+					continue;
 				}
 			}
+
+#if DEBUG
+			foreach(string str in allLinks)
+				Console.WriteLine("Repo Link:"  +str);
+#endif
 
 			foreach (string link in allLinks) {
 				if (!SaveRepo("https://github.com" + link, localPath)) {
