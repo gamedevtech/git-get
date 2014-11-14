@@ -66,7 +66,10 @@ namespace Git {
 						string html =  reader.ReadToEnd();
 						bool starError = html.Contains("have any starred repositories yet.");
 
-						return !starError;
+						bool gistError = false;
+						if (url.Contains("gist.github.com") && !html.Contains("<div class=\"gist gist-item\">"))
+							gistError = true;
+						return !starError && !gistError;
 					}
 				}
 #if !DEBUG
@@ -172,13 +175,13 @@ namespace Git {
 #endif
 		}
 
-		protected bool DownloadFile(string fileURL, string fileName, string localPath) {
+		protected bool DownloadFile(string fileURL, string fileName, string localPath, string cookie = "") {
 			if (!FileIsValid(fileURL)) {
 				Console.WriteLine("Error downloading file: " + fileURL + "\n\t> " + localPath);
 				return false;
 			}
 
-			Console.WriteLine("Downloading file: " + fileURL);
+			Console.WriteLine(cookie + "Downloading file: " + fileURL);
 
 			if (System.IO.File.Exists(fileName)) {
 				Console.WriteLine("Local file " + fileName + " exists, deleting it.");
@@ -214,19 +217,28 @@ namespace Git {
 			return true;
 		}
 
-		public bool SaveRepo(string repoUrl, string localPath) {
+		public bool SaveRepo(string repoUrl, string localPath, string cookie = "") {
 			string fileURL = repoUrl + "/archive/master.zip";
 			string fileName = repoUrl.Replace("https://github.com/", "");
 			fileName = fileName.Replace("/archive/master.zip", "");
 			fileName = localPath + fileName.Replace("/", "-") + ".zip";
 
-			return DownloadFile(fileURL, fileName, localPath);
+			return DownloadFile(fileURL, fileName, localPath, cookie);
 		}
 
-		public bool SaveGist(string gistUrl, string localPath) {
+		public bool SaveGist(string gistUrl, string localPath, string cookie = "") {
 			string fileURL = gistUrl + "/download";
 			string html = GetPageHTML(gistUrl);
-			string title = ExtractOgTitle(html);
+			string title = null;
+			try {
+				title = ExtractOgTitle(html);
+			}
+			catch (System.Exception e) {
+				ConsoleColor oc = Console.ForegroundColor;
+				Console.ForegroundColor = ConsoleColor.Red;
+				Console.WriteLine ("Error, " + gistUrl + " is not a real gist page. Skipping");
+				Console.ForegroundColor = oc;
+			}
 			if (title == null) {
 				return false;
 			}
@@ -236,7 +248,7 @@ namespace Git {
 				Console.WriteLine("Creating directory: " + localPath);
 				System.IO.Directory.CreateDirectory(localPath);
 			}
-			return DownloadFile(fileURL, fileName, localPath);
+			return DownloadFile(fileURL, fileName, localPath, cookie);
 		}
 
 		public bool SaveRepos(string localPath) {
@@ -263,9 +275,10 @@ namespace Git {
 				Console.WriteLine("Repo Link:"  +str);
 #endif
 
-			foreach (string link in allLinks) {
-				if (!SaveRepo("https://github.com" + link, localPath)) {
-					Console.WriteLine("Error saving repo: https://github.com" + link);
+			//foreach (string link in allLinks) {
+			for (int i = 0; i < allLinks.Count; ++i) {
+				if (!SaveRepo("https://github.com" + allLinks[i], localPath, i + " / " + allLinks.Count + " ")) {
+					Console.WriteLine("Error saving repo: https://github.com" + allLinks[i]);
 				}
 			}
 
@@ -288,9 +301,10 @@ namespace Git {
 				allLinks.AddRange(GetRepoLinksOnPage(Stars + "?direction=desc&page=" + (j + 1) + "&sort=created"));
 			Console.WriteLine("Found " + allLinks.Count + " stars.");
 
-			foreach (string link in allLinks) {
-				if (!SaveRepo("https://github.com" + link, localPath)) {
-					Console.WriteLine("Error saving star: https://github.com" + link);
+			//foreach (string link in allLinks) {
+			for (int i = 0; i < allLinks.Count; ++i) {
+				if (!SaveRepo("https://github.com" + allLinks[i], localPath, i + " / " + allLinks.Count + " ")) {
+					Console.WriteLine("Error saving star: https://github.com" + allLinks[i]);
 				}
 			}
 
@@ -301,6 +315,7 @@ namespace Git {
 			int page = 0;
 			List<string> allLinks = new List<string>();
 			while (PageIsValid(Gists + "?page=" + (page + 1))) {
+				//Console.WriteLine ("checking page: " + Gists + "?page=" + (page + 1));
 				string pageHtml = GetPageHTML(Gists + "?page=" + (page + 1));
 				List<string> links = new List<string>();
 				links.AddRange(ExtractHyperlinks(pageHtml));
@@ -324,9 +339,10 @@ namespace Git {
 			else Console.WriteLine(page + " gist pages found.");
 			Console.WriteLine(allLinks.Count + " gist links found.");
 
-			foreach (string link in allLinks) {
-				if (!SaveGist("https://gist.github.com" + link, localPath)) {
-					Console.WriteLine("Error saving gist: https://gist.github.com" + link);
+			//foreach (string link in allLinks) {
+			for (int i = 0; i < allLinks.Count; ++i) {
+				if (!SaveGist("https://gist.github.com" + allLinks [i], localPath, i + " / " + allLinks.Count + " ")) {
+					Console.WriteLine("Error saving gist: https://gist.github.com" + allLinks [i]);
 				}
 			}
 		}
@@ -348,6 +364,7 @@ namespace Git {
 #if DEBUG
 			error = false;
 			app.username = "gszauer";
+			mode = "gist";
 #endif
 
 			if (!error && mode == "all") {
